@@ -1,0 +1,123 @@
+CREATE DATABASE IF NOT EXISTS catalogo_livros
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;   
+USE catalogo_livros;
+
+CREATE TABLE estado (
+    id_estado INT AUTO_INCREMENT PRIMARY KEY,   
+    uf        CHAR(2)     NOT NULL UNIQUE,       
+    nome      VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;                                
+
+CREATE TABLE cidade (
+    id_cidade INT AUTO_INCREMENT PRIMARY KEY,
+    nome      VARCHAR(100) NOT NULL,
+    id_estado INT NOT NULL,
+    UNIQUE (nome, id_estado),                   
+    CONSTRAINT fk_cidade_estado FOREIGN KEY (id_estado) REFERENCES estado(id_estado)
+) ENGINE=InnoDB;
+
+CREATE TABLE idioma (
+    id_idioma INT AUTO_INCREMENT PRIMARY KEY,
+    nome      VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+CREATE TABLE editora (
+    id_editora INT AUTO_INCREMENT PRIMARY KEY,
+    nome       VARCHAR(150) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+CREATE TABLE autor (
+    id_autor INT AUTO_INCREMENT PRIMARY KEY,
+    nome     VARCHAR(150) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE genero (
+    id_genero INT AUTO_INCREMENT PRIMARY KEY,
+    nome      VARCHAR(80) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+CREATE TABLE usuario (
+    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    nome       VARCHAR(150) NOT NULL,
+    email      VARCHAR(255) NOT NULL UNIQUE,
+    id_cidade  INT,                                                            
+    CONSTRAINT fk_usuario_cidade FOREIGN KEY (id_cidade) REFERENCES cidade(id_cidade)
+) ENGINE=InnoDB;
+
+CREATE TABLE livro (
+    id_livro   INT AUTO_INCREMENT PRIMARY KEY,
+    isbn       VARCHAR(13) NOT NULL UNIQUE,
+    titulo     VARCHAR(255) NOT NULL,
+    ano        SMALLINT,
+    paginas    INT,
+    descricao  TEXT,
+    id_idioma  INT,
+    id_editora INT,
+    CONSTRAINT fk_livro_idioma  FOREIGN KEY (id_idioma)  REFERENCES idioma(id_idioma),
+    CONSTRAINT fk_livro_editora FOREIGN KEY (id_editora) REFERENCES editora(id_editora)
+) ENGINE=InnoDB;
+
+CREATE TABLE livro_autor (
+    id_livro INT NOT NULL,
+    id_autor INT NOT NULL,
+    PRIMARY KEY (id_livro, id_autor),
+    CONSTRAINT fk_la_livro FOREIGN KEY (id_livro) REFERENCES livro(id_livro),
+    CONSTRAINT fk_la_autor FOREIGN KEY (id_autor) REFERENCES autor(id_autor)
+) ENGINE=InnoDB;
+
+CREATE TABLE livro_genero (
+    id_livro  INT NOT NULL,
+    id_genero INT NOT NULL,
+    PRIMARY KEY (id_livro, id_genero),
+    CONSTRAINT fk_lg_livro  FOREIGN KEY (id_livro)  REFERENCES livro(id_livro),
+    CONSTRAINT fk_lg_genero FOREIGN KEY (id_genero) REFERENCES genero(id_genero)
+) ENGINE=InnoDB;
+
+CREATE TABLE avaliacao (
+    id_usuario     INT NOT NULL,
+    id_livro       INT NOT NULL,
+    nota           TINYINT NOT NULL CHECK (nota BETWEEN 1 AND 5),  
+    resenha        TEXT,
+    data_avaliacao DATE DEFAULT (CURRENT_DATE),                    
+    PRIMARY KEY (id_usuario, id_livro),                            
+    CONSTRAINT fk_aval_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
+    CONSTRAINT fk_aval_livro   FOREIGN KEY (id_livro)   REFERENCES livro(id_livro)
+) ENGINE=InnoDB;
+
+CREATE TABLE status_leitura (
+    id_usuario    INT NOT NULL,
+    id_livro      INT NOT NULL,
+    status        ENUM('quero ler','lendo','lido','abandonei','relendo') NOT NULL, 
+    atualizado_em DATE DEFAULT (CURRENT_DATE),
+    PRIMARY KEY (id_usuario, id_livro),                            
+    CONSTRAINT fk_stat_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
+    CONSTRAINT fk_stat_livro   FOREIGN KEY (id_livro)   REFERENCES livro(id_livro)
+) ENGINE=InnoDB;
+
+CREATE VIEW vw_livro_estatisticas AS
+SELECT
+    l.id_livro,
+    l.titulo,
+    av.nota_media,
+    av.total_avaliacoes,
+    st.total_leitores,
+    st.qtd_lendo,
+    st.qtd_lido,
+    st.qtd_quero_ler
+FROM livro l
+LEFT JOIN (
+    SELECT id_livro,
+           ROUND(AVG(nota), 2) AS nota_media,
+           COUNT(*)            AS total_avaliacoes
+    FROM avaliacao
+    GROUP BY id_livro
+) av ON av.id_livro = l.id_livro
+LEFT JOIN (
+    SELECT id_livro,
+           COUNT(*)                                             AS total_leitores,
+           SUM(CASE WHEN status = 'lendo'     THEN 1 ELSE 0 END) AS qtd_lendo,
+           SUM(CASE WHEN status = 'lido'      THEN 1 ELSE 0 END) AS qtd_lido,
+           SUM(CASE WHEN status = 'quero ler' THEN 1 ELSE 0 END) AS qtd_quero_ler
+    FROM status_leitura
+    GROUP BY id_livro
+) st ON st.id_livro = l.id_livro;
