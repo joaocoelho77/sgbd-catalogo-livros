@@ -4,6 +4,10 @@ Projeto da disciplina de Banco de Dados · Ciência de Dados e IA · PUC-SP (jan
 
 Sistema de banco de dados relacional para organizar, armazenar e recuperar as informações de uma **comunidade de leitores**. Mantém um cadastro de usuários, com endereço completo, e um catálogo de livros com autores, gêneros, editoras, idiomas, avaliações e o status de leitura de cada usuário.
 
+## Demonstração online
+
+👉 **[Abrir a prévia do catálogo](https://joaocoelho77.github.io/sgbd-catalogo-livros/)**: consulta de livros e cadastro de leitores, rodando no navegador com uma amostra dos dados.
+
 ## Modelo entidade-relacionamento
 
 ![Diagrama entidade-relacionamento](imagens/sgbd-der.png)
@@ -21,6 +25,7 @@ Sistema de banco de dados relacional para organizar, armazenar e recuperar as in
 sql/       scripts de criação, carga e consultas
 docs/      documentação completa (PDF)
 imagens/   imagens do README
+index.html prévia web publicada no GitHub Pages
 ```
 
 ## Ferramentas
